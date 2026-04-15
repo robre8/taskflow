@@ -7,6 +7,13 @@ async function bootstrap() {
   
   app.setGlobalPrefix('api');
 
+  app.enableCors({
+    origin: 'http://localhost:3001',
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+  });
+
   const config = new DocumentBuilder()
     .setTitle('TaskFlow Pro API')
     .setDescription('Project Management Platform API')

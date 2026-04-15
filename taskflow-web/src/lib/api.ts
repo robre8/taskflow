@@ -1,0 +1,87 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public message: string,
+    public data?: any,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export async function fetchApi<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${API_URL}${endpoint}`;
+
+  // Read accessToken from cookies (only on client-side)
+  let token: string | undefined;
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';').reduce((acc: Record<string, string>, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+    token = cookies.accessToken;
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add Authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const defaultOptions: RequestInit = {
+    headers,
+    credentials: 'include',
+    ...options,
+  };
+
+  const response = await fetch(url, defaultOptions);
+
+  if (!response.ok) {
+    let errorMessage = 'An error occurred';
+    let errorData: any;
+
+    try {
+      errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      errorMessage = response.statusText || errorMessage;
+    }
+
+    throw new ApiError(response.status, errorMessage, errorData);
+  }
+
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json();
+}
+
+export const api = {
+  get: <T>(endpoint: string) => fetchApi<T>(endpoint),
+  post: <T>(endpoint: string, data: any) =>
+    fetchApi<T>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  patch: <T>(endpoint: string, data: any) =>
+    fetchApi<T>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  delete: <T>(endpoint: string) =>
+    fetchApi<T>(endpoint, {
+      method: 'DELETE',
+    }),
+};
