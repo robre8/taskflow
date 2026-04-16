@@ -31,8 +31,9 @@ export interface AuthResponse {
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const response = await api.post<AuthResponse>('/auth/login', credentials);
   
-  // Save accessToken to localStorage as fallback
+  // Save accessToken to cookie (for middleware) and localStorage (fallback)
   if (typeof window !== 'undefined') {
+    document.cookie = `accessToken=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}`;
     localStorage.setItem('accessToken', response.accessToken);
   }
   
@@ -42,8 +43,9 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const response = await api.post<AuthResponse>('/auth/register', data);
   
-  // Save accessToken to localStorage as fallback
+  // Save accessToken to cookie (for middleware) and localStorage (fallback)
   if (typeof window !== 'undefined') {
+    document.cookie = `accessToken=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}`;
     localStorage.setItem('accessToken', response.accessToken);
   }
   
@@ -53,8 +55,9 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
 export async function logout(): Promise<void> {
   await api.post<void>('/auth/logout', {});
   
-  // Clear localStorage
+  // Clear both cookie and localStorage
   if (typeof window !== 'undefined') {
+    document.cookie = 'accessToken=; path=/; max-age=0';
     localStorage.removeItem('accessToken');
   }
 }
