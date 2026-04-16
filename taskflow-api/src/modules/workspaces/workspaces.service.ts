@@ -51,15 +51,22 @@ export class WorkspacesService {
   }
 
   async create(createWorkspaceDto: CreateWorkspaceDto): Promise<Workspace> {
+    const { ownerId, ...workspaceData } = createWorkspaceDto;
+    
     const existingWorkspace = await this.workspaceRepository.findOne({
-      where: { slug: createWorkspaceDto.slug },
+      where: { slug: workspaceData.slug },
     });
 
     if (existingWorkspace) {
-      throw new ConflictException(`Workspace with slug ${createWorkspaceDto.slug} already exists`);
+      throw new ConflictException(`Workspace with slug ${workspaceData.slug} already exists`);
     }
 
-    const workspace = this.workspaceRepository.create(createWorkspaceDto);
+    const workspace = this.workspaceRepository.create(workspaceData);
+    
+    if (ownerId) {
+      workspace.owner = { id: ownerId } as any;
+    }
+    
     return this.workspaceRepository.save(workspace);
   }
 
@@ -101,8 +108,8 @@ export class WorkspacesService {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
     }
 
-    // Verify ownership
-    if (workspace.owner.id !== userId) {
+    // Verify ownership (allow deletion if owner is null for workspaces created before the fix)
+    if (workspace.owner && workspace.owner.id !== userId) {
       throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
