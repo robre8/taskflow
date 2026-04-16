@@ -2,26 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { getMe } from '@/lib/auth';
-import { User } from '@/types';
+import { api } from '@/lib/api';
+import { User, Workspace, Project, Task } from '@/types';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await getMe();
-        setUser(userData as User);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      const [userData, workspacesData, projectsData, tasksData] = await Promise.all([
+        getMe(),
+        api.get<Workspace[]>('/workspaces'),
+        api.get<Project[]>('/projects'),
+        api.get<Task[]>('/tasks'),
+      ]);
+      console.log('userData:', userData);
+      setUser(userData as User);
+      setWorkspaces(workspacesData);
+      setProjects(projectsData);
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completedTasks = tasks.filter((task) => task.status === 'DONE').length;
 
   if (loading) {
     return (
@@ -36,7 +51,7 @@ export default function DashboardPage() {
       {/* Greeting */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">
-          Bienvenido, {user?.firstName} {user?.lastName}
+          Bienvenido, {user?.firstName}
         </h1>
         <p className="text-gray-400">Aquí tienes un resumen de tu actividad</p>
       </div>
@@ -51,7 +66,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <span className="text-3xl font-bold text-white">3</span>
+            <span className="text-3xl font-bold text-white">{workspaces.length}</span>
           </div>
           <h3 className="text-gray-400 text-sm font-medium">Total Workspaces</h3>
         </div>
@@ -64,7 +79,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
-            <span className="text-3xl font-bold text-white">8</span>
+            <span className="text-3xl font-bold text-white">{projects.length}</span>
           </div>
           <h3 className="text-gray-400 text-sm font-medium">Total Projects</h3>
         </div>
@@ -77,7 +92,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
-            <span className="text-3xl font-bold text-white">24</span>
+            <span className="text-3xl font-bold text-white">{tasks.length}</span>
           </div>
           <h3 className="text-gray-400 text-sm font-medium">Total Tasks</h3>
         </div>
@@ -90,7 +105,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="text-3xl font-bold text-white">18</span>
+            <span className="text-3xl font-bold text-white">{completedTasks}</span>
           </div>
           <h3 className="text-gray-400 text-sm font-medium">Tasks Completadas</h3>
         </div>

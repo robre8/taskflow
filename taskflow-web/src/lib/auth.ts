@@ -54,8 +54,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function getMe(): Promise<AuthResponse['user']> {
-  const user = await api.get<AuthResponse['user']>('/auth/me');
-  return user;
+  const response = await api.get<{ user: AuthResponse['user'] }>('/auth/me');
+  return response.user;
 }
 
 export async function refreshToken(): Promise<AuthResponse> {

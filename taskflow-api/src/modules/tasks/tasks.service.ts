@@ -14,7 +14,7 @@ export class TasksService {
 
   async findAll(): Promise<Task[]> {
     return this.taskRepository.find({
-      relations: ['project', 'assignee', 'comments'],
+      relations: ['project', 'project.workspace', 'assignee'],
       order: { position: 'ASC' },
     });
   }
@@ -35,7 +35,7 @@ export class TasksService {
   async findByProject(projectId: string): Promise<Task[]> {
     return this.taskRepository.find({
       where: { project: { id: projectId } },
-      relations: ['assignee', 'comments'],
+      relations: ['project', 'assignee', 'comments'],
       order: { position: 'ASC' },
     });
   }
@@ -49,17 +49,39 @@ export class TasksService {
   }
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    const task = this.taskRepository.create(createTaskDto);
+    const { projectId, assigneeId, ...taskData } = createTaskDto;
+    
+    const task = this.taskRepository.create(taskData);
+    
+    if (projectId) {
+      task.project = { id: projectId } as any;
+    }
+    
+    if (assigneeId) {
+      task.assignee = { id: assigneeId } as any;
+    }
+    
     return this.taskRepository.save(task);
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+    const { projectId, assigneeId, ...taskData } = updateTaskDto;
+    
     const task = await this.taskRepository.findOne({ where: { id } });
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    Object.assign(task, updateTaskDto);
+    Object.assign(task, taskData);
+    
+    if (projectId) {
+      task.project = { id: projectId } as any;
+    }
+    
+    if (assigneeId) {
+      task.assignee = { id: assigneeId } as any;
+    }
+    
     return this.taskRepository.save(task);
   }
 

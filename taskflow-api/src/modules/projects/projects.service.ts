@@ -14,7 +14,7 @@ export class ProjectsService {
 
   async findAll(): Promise<Project[]> {
     return this.projectRepository.find({
-      relations: ['workspace'],
+      relations: ['workspace', 'tasks'],
     });
   }
 
@@ -39,7 +39,14 @@ export class ProjectsService {
   }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
-    const project = this.projectRepository.create(createProjectDto);
+    const { workspaceId, ...projectData } = createProjectDto;
+    
+    const project = this.projectRepository.create(projectData);
+    
+    if (workspaceId) {
+      project.workspace = { id: workspaceId } as any;
+    }
+    
     return this.projectRepository.save(project);
   }
 
