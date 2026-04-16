@@ -9,6 +9,12 @@
 
 TaskFlow Pro es una plataforma de gestión de proyectos estilo Linear con tablero Kanban, diseñada para equipos modernos. Ofrece una experiencia fluida con autenticación segura, gestión de workspaces, proyectos y tareas en tiempo real.
 
+## Demo
+
+- **Frontend**: https://taskflow-smoky-seven.vercel.app
+- **Backend API**: https://taskflow-production-1922.up.railway.app/api
+- **Swagger**: https://taskflow-production-1922.up.railway.app/api/docs
+
 ## Funcionalidades Principales
 
 - 🔐 **Autenticación JWT con cookies httpOnly** - Seguridad mejorada con tokens almacenados en cookies httpOnly
