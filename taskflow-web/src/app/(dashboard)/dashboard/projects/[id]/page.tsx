@@ -105,6 +105,22 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    // Optimistic update
+    const previousTasks = [...tasks];
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, status: newStatus as any } : task
+    ));
+
+    try {
+      await api.patch(`/tasks/${taskId}`, { status: newStatus });
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar estado');
+      // Revert on error
+      setTasks(previousTasks);
+    }
+  };
+
   const getTasksByStatus = (status: string) => {
     return tasks.filter((task) => task.status === status);
   };
@@ -195,7 +211,23 @@ export default function ProjectDetailPage() {
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="mb-3">
+                      <select
+                        value={task.status}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleUpdateStatus(task.id, e.target.value);
+                        }}
+                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer hover:border-gray-600 transition-colors"
+                      >
+                        <option value="TODO">Por Hacer</option>
+                        <option value="IN_PROGRESS">En Progreso</option>
+                        <option value="IN_REVIEW">En Revisión</option>
+                        <option value="DONE">Completado</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                       {task.assignee && (
                         <div className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
@@ -210,6 +242,16 @@ export default function ProjectDetailPage() {
                         </span>
                       )}
                     </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/dashboard/projects/${projectId}/tasks/${task.id}`);
+                      }}
+                      className="w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors"
+                    >
+                      Ver detalles
+                    </button>
                   </div>
                 ))}
 

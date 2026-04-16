@@ -33,6 +33,8 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
   
   // Store accessToken in cookie
   document.cookie = `accessToken=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}`;
+  // Store refreshToken in cookie
+  document.cookie = `refreshToken=${response.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}`;
   
   return response;
 }
@@ -42,15 +44,29 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   
   // Store accessToken in cookie
   document.cookie = `accessToken=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}`;
+  // Store refreshToken in cookie
+  document.cookie = `refreshToken=${response.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}`;
   
   return response;
 }
 
 export async function logout(): Promise<void> {
-  await api.post<void>('/auth/logout', {});
+  // Read refreshToken from cookies
+  let refreshToken: string | undefined;
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';').reduce((acc: Record<string, string>, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+    refreshToken = cookies.refreshToken;
+  }
+
+  await api.post<void>('/auth/logout', { refreshToken });
   
-  // Remove accessToken cookie
+  // Remove accessToken and refreshToken cookies
   document.cookie = 'accessToken=; path=/; max-age=0';
+  document.cookie = 'refreshToken=; path=/; max-age=0';
 }
 
 export async function getMe(): Promise<AuthResponse['user']> {

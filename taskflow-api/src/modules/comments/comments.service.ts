@@ -33,10 +33,18 @@ export class CommentsService {
   }
 
   async findByTask(taskId: string): Promise<Comment[]> {
-    return this.commentRepository.find({
+    const comments = await this.commentRepository.find({
       where: { task: { id: taskId } },
       relations: ['author'],
       order: { createdAt: 'DESC' },
+    });
+    
+    return comments.map(comment => {
+      if (comment.author) {
+        const { password, ...authorWithoutPassword } = comment.author as any;
+        comment.author = authorWithoutPassword;
+      }
+      return comment;
     });
   }
 
@@ -49,8 +57,35 @@ export class CommentsService {
   }
 
   async create(createCommentDto: CreateCommentDto): Promise<Comment> {
-    const comment = this.commentRepository.create(createCommentDto);
-    return this.commentRepository.save(comment);
+    const { taskId, authorId, ...commentData } = createCommentDto;
+    
+    const comment = this.commentRepository.create(commentData);
+    
+    if (taskId) {
+      comment.task = { id: taskId } as any;
+    }
+    
+    if (authorId) {
+      comment.author = { id: authorId } as any;
+    }
+    
+    const saved = await this.commentRepository.save(comment);
+    const commentWithRelations = await this.commentRepository.findOne({ 
+      where: { id: saved.id }, 
+      relations: ['author'] 
+    });
+    
+    if (!commentWithRelations) {
+      throw new NotFoundException(`Comment with ID ${saved.id} not found after creation`);
+    }
+    
+    // Remove password from author
+    if (commentWithRelations.author) {
+      const { password, ...authorWithoutPassword } = commentWithRelations.author as any;
+      commentWithRelations.author = authorWithoutPassword;
+    }
+    
+    return commentWithRelations;
   }
 
   async update(id: string, updateCommentDto: UpdateCommentDto): Promise<Comment> {
