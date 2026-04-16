@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Workspace } from './entities/workspace.entity';
 import { Project } from '../projects/entities/project.entity';
 import { Task } from '../tasks/entities/task.entity';
+import { Comment } from '../comments/entities/comment.entity';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 
@@ -16,6 +17,8 @@ export class WorkspacesService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
+    @InjectRepository(Comment)
+    private readonly commentRepository: Repository<Comment>,
   ) {}
 
   async findAll(): Promise<Workspace[]> {
@@ -113,11 +116,19 @@ export class WorkspacesService {
       throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
-    // Delete all tasks for each project
+    // Delete all comments for each task, then delete tasks, then projects, then workspace
     for (const project of workspace.projects) {
       const tasks = await this.taskRepository.find({
         where: { project: { id: project.id } },
       });
+
+      for (const task of tasks) {
+        const comments = await this.commentRepository.find({
+          where: { task: { id: task.id } },
+        });
+        await this.commentRepository.remove(comments);
+      }
+
       await this.taskRepository.remove(tasks);
     }
 
