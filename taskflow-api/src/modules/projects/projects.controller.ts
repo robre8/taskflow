@@ -17,6 +17,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -70,8 +71,9 @@ export class ProjectsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProjectDto: UpdateProjectDto,
+    @CurrentUser() user: any,
   ) {
-    return this.projectsService.update(id, updateProjectDto);
+    return this.projectsService.update(id, updateProjectDto, user.id);
   }
 
   @Delete(':id')
@@ -79,7 +81,10 @@ export class ProjectsController {
   @ApiParam({ name: 'id', description: 'Project UUID' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Project deleted successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.projectsService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.projectsService.remove(id, user.id);
   }
 }

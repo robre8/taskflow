@@ -17,6 +17,7 @@ import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('workspaces')
 @Controller('workspaces')
@@ -73,8 +74,9 @@ export class WorkspacesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateWorkspaceDto: UpdateWorkspaceDto,
+    @CurrentUser() user: any,
   ) {
-    return this.workspacesService.update(id, updateWorkspaceDto);
+    return this.workspacesService.update(id, updateWorkspaceDto, user.id);
   }
 
   @Delete(':id')
@@ -82,8 +84,11 @@ export class WorkspacesController {
   @ApiParam({ name: 'id', description: 'Workspace UUID' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Workspace deleted successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Workspace not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.workspacesService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.workspacesService.remove(id, user.id);
   }
 
   @Post(':id/members/:userId')

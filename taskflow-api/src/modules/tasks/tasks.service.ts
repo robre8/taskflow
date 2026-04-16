@@ -64,13 +64,16 @@ export class TasksService {
     return this.taskRepository.save(task);
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto, userId: string): Promise<Task> {
     const { projectId, assigneeId, ...taskData } = updateTaskDto;
     
     const task = await this.taskRepository.findOne({ where: { id } });
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
+
+    // Authentication is verified by the guard
+    // TODO: Implement workspace membership check and creator check for delete
 
     Object.assign(task, taskData);
     
@@ -85,11 +88,14 @@ export class TasksService {
     return this.taskRepository.save(task);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId: string): Promise<void> {
     const task = await this.taskRepository.findOne({ where: { id } });
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
+
+    // Authentication is verified by the guard
+    // TODO: Implement workspace membership check and creator check for delete
 
     await this.taskRepository.remove(task);
   }

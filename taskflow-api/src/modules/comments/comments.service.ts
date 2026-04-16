@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
@@ -98,10 +98,18 @@ export class CommentsService {
     return this.commentRepository.save(comment);
   }
 
-  async remove(id: string): Promise<void> {
-    const comment = await this.commentRepository.findOne({ where: { id } });
+  async remove(id: string, userId: string): Promise<void> {
+    const comment = await this.commentRepository.findOne({
+      where: { id },
+      relations: ['author'],
+    });
     if (!comment) {
       throw new NotFoundException(`Comment with ID ${id} not found`);
+    }
+
+    // Verify ownership
+    if (comment.author.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
     await this.commentRepository.remove(comment);

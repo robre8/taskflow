@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project } from './entities/project.entity';
@@ -50,20 +50,36 @@ export class ProjectsService {
     return this.projectRepository.save(project);
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
-    const project = await this.projectRepository.findOne({ where: { id } });
+  async update(id: string, updateProjectDto: UpdateProjectDto, userId: string): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'workspace.owner'],
+    });
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+
+    // Verify workspace ownership
+    if (project.workspace.owner.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
     Object.assign(project, updateProjectDto);
     return this.projectRepository.save(project);
   }
 
-  async remove(id: string): Promise<void> {
-    const project = await this.projectRepository.findOne({ where: { id } });
+  async remove(id: string, userId: string): Promise<void> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'workspace.owner'],
+    });
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+
+    // Verify workspace ownership
+    if (project.workspace.owner.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
     await this.projectRepository.remove(project);

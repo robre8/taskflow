@@ -17,6 +17,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -78,8 +79,9 @@ export class TasksController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTaskDto: UpdateTaskDto,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.update(id, updateTaskDto);
+    return this.tasksService.update(id, updateTaskDto, user.id);
   }
 
   @Delete(':id')
@@ -87,7 +89,10 @@ export class TasksController {
   @ApiParam({ name: 'id', description: 'Task UUID' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Task deleted successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Task not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tasksService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.tasksService.remove(id, user.id);
   }
 }

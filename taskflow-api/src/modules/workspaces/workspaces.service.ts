@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workspace } from './entities/workspace.entity';
@@ -63,10 +63,18 @@ export class WorkspacesService {
     return this.workspaceRepository.save(workspace);
   }
 
-  async update(id: string, updateWorkspaceDto: UpdateWorkspaceDto): Promise<Workspace> {
-    const workspace = await this.workspaceRepository.findOne({ where: { id } });
+  async update(id: string, updateWorkspaceDto: UpdateWorkspaceDto, userId: string): Promise<Workspace> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
     if (!workspace) {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
+    }
+
+    // Verify ownership
+    if (workspace.owner.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
     if (updateWorkspaceDto.slug && updateWorkspaceDto.slug !== workspace.slug) {
@@ -83,14 +91,19 @@ export class WorkspacesService {
     return this.workspaceRepository.save(workspace);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, userId: string): Promise<void> {
     const workspace = await this.workspaceRepository.findOne({
       where: { id },
-      relations: ['projects'],
+      relations: ['projects', 'owner'],
     });
 
     if (!workspace) {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
+    }
+
+    // Verify ownership
+    if (workspace.owner.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para esta acción');
     }
 
     // Delete all tasks for each project

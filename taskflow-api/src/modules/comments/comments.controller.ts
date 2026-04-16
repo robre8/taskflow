@@ -90,7 +90,10 @@ export class CommentsController {
   @ApiParam({ name: 'id', description: 'Comment UUID' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Comment deleted successfully' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Comment not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.commentsService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.commentsService.remove(id, user.id);
   }
 }

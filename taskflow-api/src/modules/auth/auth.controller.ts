@@ -6,7 +6,9 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -28,8 +30,28 @@ export class AuthController {
   @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered successfully' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Email already exists' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input data' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.register(registerDto);
+    
+    response.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+    
+    const { accessToken, refreshToken, ...userResponse } = result;
+    return userResponse;
   }
 
   @Post('login')
@@ -38,8 +60,28 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Login successful' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.login(loginDto);
+    
+    response.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+    
+    const { accessToken, refreshToken, ...userResponse } = result;
+    return userResponse;
   }
 
   @Post('refresh')
@@ -48,8 +90,28 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Token refreshed successfully' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid refresh token' })
-  async refresh(@Body() refreshDto: RefreshDto) {
-    return this.authService.refresh(refreshDto);
+  async refresh(
+    @Body() refreshDto: RefreshDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.refresh(refreshDto);
+    
+    response.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+    
+    const { accessToken, refreshToken, ...userResponse } = result;
+    return userResponse;
   }
 
   @Post('logout')
@@ -57,8 +119,15 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout and invalidate refresh token' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Logout successful' })
-  async logout(@Body('refreshToken') refreshToken: string) {
+  async logout(
+    @Res({ passthrough: true }) response: Response,
+    @Body('refreshToken') refreshToken: string,
+  ) {
     await this.authService.logout(refreshToken);
+    
+    response.clearCookie('accessToken');
+    response.clearCookie('refreshToken');
+    
     return { message: 'Logout successful' };
   }
 
