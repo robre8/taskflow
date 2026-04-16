@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Project, Workspace } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function WorkspaceDetailPage() {
   const params = useParams();
@@ -20,6 +21,8 @@ export default function WorkspaceDetailPage() {
   });
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWorkspace();
@@ -70,20 +73,25 @@ export default function WorkspaceDetailPage() {
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-      return;
-    }
+    setProjectToDelete(projectId);
+    setIsConfirmModalOpen(true);
+  };
 
-    setDeletingId(projectId);
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setDeletingId(projectToDelete);
     setError('');
+    setIsConfirmModalOpen(false);
 
     try {
-      await api.delete(`/projects/${projectId}`);
+      await api.delete(`/projects/${projectToDelete}`);
       fetchProjects();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar proyecto');
     } finally {
       setDeletingId(null);
+      setProjectToDelete(null);
     }
   };
 
@@ -254,6 +262,20 @@ export default function WorkspaceDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Eliminar Proyecto"
+        message="¿Estás seguro de que quieres eliminar este proyecto?"
+        onConfirm={confirmDeleteProject}
+        onCancel={() => {
+          setIsConfirmModalOpen(false);
+          setProjectToDelete(null);
+        }}
+        confirmText="Eliminar"
+        confirmColor="red"
+      />
     </div>
   );
 }

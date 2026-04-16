@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Task } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const PRIORITIES = {
   LOW: { label: 'Baja', color: 'bg-gray-600/20 text-gray-400 border-gray-600/50' },
@@ -25,6 +26,8 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -44,20 +47,25 @@ export default function TasksPage() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
-      return;
-    }
+    setTaskToDelete(taskId);
+    setIsConfirmModalOpen(true);
+  };
 
-    setDeletingId(taskId);
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    setDeletingId(taskToDelete);
     setError('');
+    setIsConfirmModalOpen(false);
 
     try {
-      await api.delete(`/tasks/${taskId}`);
+      await api.delete(`/tasks/${taskToDelete}`);
       fetchTasks();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar tarea');
     } finally {
       setDeletingId(null);
+      setTaskToDelete(null);
     }
   };
 
@@ -172,6 +180,20 @@ export default function TasksPage() {
           ))}
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Eliminar Tarea"
+        message="¿Estás seguro de que quieres eliminar esta tarea?"
+        onConfirm={confirmDeleteTask}
+        onCancel={() => {
+          setIsConfirmModalOpen(false);
+          setTaskToDelete(null);
+        }}
+        confirmText="Eliminar"
+        confirmColor="red"
+      />
     </div>
   );
 }

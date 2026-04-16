@@ -24,7 +24,6 @@ export default function DashboardPage() {
         api.get<Project[]>('/projects'),
         api.get<Task[]>('/tasks'),
       ]);
-      console.log('userData:', userData);
       setUser(userData as User);
       setWorkspaces(workspacesData);
       setProjects(projectsData);

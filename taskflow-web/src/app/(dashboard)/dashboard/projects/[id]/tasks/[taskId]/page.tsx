@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getMe } from '@/lib/auth';
 import { Task, Comment } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const PRIORITIES = {
   LOW: { label: 'Baja', color: 'bg-gray-600/20 text-gray-400 border-gray-600/50' },
@@ -30,10 +32,15 @@ export default function TaskDetailPage() {
   const [error, setError] = useState('');
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTask();
     fetchComments();
+    fetchCurrentUser();
   }, [taskId]);
 
   const fetchTask = async () => {
@@ -49,11 +56,20 @@ export default function TaskDetailPage() {
     try {
       const data = await api.get<Comment[]>(`/comments/task/${taskId}`);
       setComments(data);
-      console.log(comments);
     } catch (err: any) {
       setError(err.message || 'Error al cargar comentarios');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await getMe();
+      setCurrentUser(user);
+    } catch (err: any) {
+      // User might not be logged in, that's okay
+      console.error('Error fetching current user:', err);
     }
   };
 
@@ -75,6 +91,29 @@ export default function TaskDetailPage() {
       setError(err.message || 'Error al agregar comentario');
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setCommentToDelete(commentId);
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
+
+    setDeletingCommentId(commentToDelete);
+    setError('');
+    setIsConfirmModalOpen(false);
+
+    try {
+      await api.delete(`/comments/${commentToDelete}`);
+      fetchComments();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar comentario');
+    } finally {
+      setDeletingCommentId(null);
+      setCommentToDelete(null);
     }
   };
 
@@ -211,6 +250,18 @@ export default function TaskDetailPage() {
                           </span>
                         </div>
                       </div>
+                      {currentUser && comment.author?.id === currentUser.id && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          disabled={deletingCommentId === comment.id}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Eliminar comentario"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                     <p className="text-gray-300">{comment.content}</p>
                   </div>
@@ -220,6 +271,20 @@ export default function TaskDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Eliminar Comentario"
+        message="¿Estás seguro de que quieres eliminar este comentario?"
+        onConfirm={confirmDeleteComment}
+        onCancel={() => {
+          setIsConfirmModalOpen(false);
+          setCommentToDelete(null);
+        }}
+        confirmText="Eliminar"
+        confirmColor="red"
+      />
     </div>
   );
 }

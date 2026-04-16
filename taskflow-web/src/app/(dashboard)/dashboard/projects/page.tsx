@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Project } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -11,6 +12,8 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -30,20 +33,25 @@ export default function ProjectsPage() {
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto? Esto también eliminará todas sus tareas.')) {
-      return;
-    }
+    setProjectToDelete(projectId);
+    setIsConfirmModalOpen(true);
+  };
 
-    setDeletingId(projectId);
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setDeletingId(projectToDelete);
     setError('');
+    setIsConfirmModalOpen(false);
 
     try {
-      await api.delete(`/projects/${projectId}`);
+      await api.delete(`/projects/${projectToDelete}`);
       fetchProjects();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar proyecto');
     } finally {
       setDeletingId(null);
+      setProjectToDelete(null);
     }
   };
 
@@ -147,6 +155,20 @@ export default function ProjectsPage() {
           ))}
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Eliminar Proyecto"
+        message="¿Estás seguro de que quieres eliminar este proyecto? Esto también eliminará todas sus tareas."
+        onConfirm={confirmDeleteProject}
+        onCancel={() => {
+          setIsConfirmModalOpen(false);
+          setProjectToDelete(null);
+        }}
+        confirmText="Eliminar"
+        confirmColor="red"
+      />
     </div>
   );
 }

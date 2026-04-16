@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getMe } from '@/lib/auth';
 import { Workspace, User } from '@/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function WorkspacesPage() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function WorkspacesPage() {
   });
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUser();
@@ -73,20 +76,25 @@ export default function WorkspacesPage() {
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este workspace? Esto también eliminará todos sus proyectos y tareas.')) {
-      return;
-    }
+    setWorkspaceToDelete(workspaceId);
+    setIsConfirmModalOpen(true);
+  };
 
-    setDeletingId(workspaceId);
+  const confirmDeleteWorkspace = async () => {
+    if (!workspaceToDelete) return;
+
+    setDeletingId(workspaceToDelete);
     setError('');
+    setIsConfirmModalOpen(false);
 
     try {
-      await api.delete(`/workspaces/${workspaceId}`);
+      await api.delete(`/workspaces/${workspaceToDelete}`);
       fetchWorkspaces();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar workspace');
     } finally {
       setDeletingId(null);
+      setWorkspaceToDelete(null);
     }
   };
 
@@ -254,6 +262,20 @@ export default function WorkspacesPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title="Eliminar Workspace"
+        message="¿Estás seguro de que quieres eliminar este workspace? Esto también eliminará todos sus proyectos y tareas."
+        onConfirm={confirmDeleteWorkspace}
+        onCancel={() => {
+          setIsConfirmModalOpen(false);
+          setWorkspaceToDelete(null);
+        }}
+        confirmText="Eliminar"
+        confirmColor="red"
+      />
     </div>
   );
 }
