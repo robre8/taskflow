@@ -17,6 +17,18 @@ export interface DatabaseConfig {
 }
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
+  // Use DATABASE_URL for production (Railway), fallback to separate variables for local development
+  if (process.env.DATABASE_URL) {
+    return {
+      type: 'postgres' as const,
+      url: process.env.DATABASE_URL,
+      synchronize: true,
+      logging: false,
+      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      ssl: { rejectUnauthorized: false },
+    };
+  }
+
   const values = {
     type: 'postgres' as const,
     host: process.env.DB_HOST || 'localhost',
