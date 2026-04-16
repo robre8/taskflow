@@ -17,10 +17,32 @@ export async function fetchApi<T>(
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
 
+  // Read accessToken from cookies first, then localStorage as fallback
+  let token: string | undefined;
+  if (typeof window !== 'undefined') {
+    // Try cookies first
+    const cookies = document.cookie.split(';').reduce((acc: Record<string, string>, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+    token = cookies.accessToken;
+    
+    // Fallback to localStorage if not in cookies
+    if (!token) {
+      token = localStorage.getItem('accessToken') || undefined;
+    }
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
+
+  // Add Authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const defaultOptions: RequestInit = {
     headers,

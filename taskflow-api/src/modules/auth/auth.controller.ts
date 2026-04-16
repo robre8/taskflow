@@ -50,8 +50,7 @@ export class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
     
-    const { accessToken, refreshToken, ...userResponse } = result;
-    return userResponse;
+    return result;
   }
 
   @Post('login')
@@ -80,8 +79,7 @@ export class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
     
-    const { accessToken, refreshToken, ...userResponse } = result;
-    return userResponse;
+    return result;
   }
 
   @Post('refresh')
@@ -110,8 +108,7 @@ export class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
     
-    const { accessToken, refreshToken, ...userResponse } = result;
-    return userResponse;
+    return result;
   }
 
   @Post('logout')

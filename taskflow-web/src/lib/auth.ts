@@ -30,16 +30,33 @@ export interface AuthResponse {
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const response = await api.post<AuthResponse>('/auth/login', credentials);
+  
+  // Save accessToken to localStorage as fallback
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('accessToken', response.accessToken);
+  }
+  
   return response;
 }
 
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const response = await api.post<AuthResponse>('/auth/register', data);
+  
+  // Save accessToken to localStorage as fallback
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('accessToken', response.accessToken);
+  }
+  
   return response;
 }
 
 export async function logout(): Promise<void> {
   await api.post<void>('/auth/logout', {});
+  
+  // Clear localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('accessToken');
+  }
 }
 
 export async function getMe(): Promise<AuthResponse['user']> {
