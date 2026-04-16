@@ -36,6 +36,31 @@ export default function DashboardPage() {
   };
 
   const completedTasks = tasks.filter((task) => task.status === 'DONE').length;
+  const recentTasks = tasks
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 5);
+
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Hace un momento';
+    if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} minutos`;
+    if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)} horas`;
+    if (diffInSeconds < 604800) return `Hace ${Math.floor(diffInSeconds / 86400)} días`;
+    return `Hace ${Math.floor(diffInSeconds / 604800)} semanas`;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'TODO': return 'bg-gray-400';
+      case 'IN_PROGRESS': return 'bg-blue-400';
+      case 'IN_REVIEW': return 'bg-yellow-400';
+      case 'DONE': return 'bg-green-400';
+      default: return 'bg-gray-400';
+    }
+  };
 
   if (loading) {
     return (
@@ -110,26 +135,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Additional Content */}
+      {/* Recent Tasks */}
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
         <h2 className="text-xl font-semibold text-white mb-4">Actividad Reciente</h2>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4 text-gray-300">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <p>Nuevo proyecto creado en Workspace Principal</p>
-            <span className="text-gray-500 text-sm ml-auto">Hace 2 horas</span>
+        {recentTasks.length === 0 ? (
+          <p className="text-gray-400">No hay actividad reciente</p>
+        ) : (
+          <div className="space-y-4">
+            {recentTasks.map((task) => (
+              <div key={task.id} className="flex items-center space-x-4 text-gray-300">
+                <div className={`w-2 h-2 ${getStatusColor(task.status)} rounded-full`}></div>
+                <p className="flex-1 truncate">{task.title}</p>
+                <span className="text-gray-500 text-sm whitespace-nowrap">{formatTimeAgo(task.updatedAt)}</span>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center space-x-4 text-gray-300">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <p>Tarea "Actualizar documentación" completada</p>
-            <span className="text-gray-500 text-sm ml-auto">Hace 4 horas</span>
-          </div>
-          <div className="flex items-center space-x-4 text-gray-300">
-            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-            <p>Nuevo miembro agregado a Workspace Design</p>
-            <span className="text-gray-500 text-sm ml-auto">Hace 1 día</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
