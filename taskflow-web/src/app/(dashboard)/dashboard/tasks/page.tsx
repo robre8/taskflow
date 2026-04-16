@@ -24,6 +24,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -39,6 +40,24 @@ export default function TasksPage() {
       setError(err.message || 'Error al cargar tareas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+      return;
+    }
+
+    setDeletingId(taskId);
+    setError('');
+
+    try {
+      await api.delete(`/tasks/${taskId}`);
+      fetchTasks();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar tarea');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -106,9 +125,19 @@ export default function TasksPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex items-center space-x-2">
                   {getPriorityBadge(task.priority)}
                   {getStatusBadge(task.status)}
+                  <button
+                    onClick={() => handleDeleteTask(task.id)}
+                    disabled={deletingId === task.id}
+                    className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Eliminar tarea"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 

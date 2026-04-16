@@ -10,6 +10,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -25,6 +26,24 @@ export default function ProjectsPage() {
       setError(err.message || 'Error al cargar proyectos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto? Esto también eliminará todas sus tareas.')) {
+      return;
+    }
+
+    setDeletingId(projectId);
+    setError('');
+
+    try {
+      await api.delete(`/projects/${projectId}`);
+      fetchProjects();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar proyecto');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -87,9 +106,21 @@ export default function ProjectsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2f" />
                   </svg>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded border ${getStatusColor(project.status)}`}>
-                  {project.status}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`text-xs px-2 py-1 rounded border ${getStatusColor(project.status)}`}>
+                    {project.status}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteProject(project.id)}
+                    disabled={deletingId === project.id}
+                    className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Eliminar proyecto"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <h3 className="text-xl font-semibold text-white mb-2">{project.name}</h3>

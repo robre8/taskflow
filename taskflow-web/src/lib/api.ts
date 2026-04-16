@@ -60,8 +60,14 @@ export async function fetchApi<T>(
     throw new ApiError(response.status, errorMessage, errorData);
   }
 
-  // Handle 204 No Content
-  if (response.status === 204) {
+  // Handle 204 No Content (DELETE and other methods may return 204)
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
+  }
+
+  // Handle empty responses
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
     return undefined as T;
   }
 

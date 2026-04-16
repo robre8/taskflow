@@ -19,6 +19,7 @@ export default function WorkspacesPage() {
     slug: '',
   });
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUser();
@@ -68,6 +69,24 @@ export default function WorkspacesPage() {
       setError(err.message || 'Error al crear workspace');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este workspace? Esto también eliminará todos sus proyectos y tareas.')) {
+      return;
+    }
+
+    setDeletingId(workspaceId);
+    setError('');
+
+    try {
+      await api.delete(`/workspaces/${workspaceId}`);
+      fetchWorkspaces();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar workspace');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -125,9 +144,21 @@ export default function WorkspacesPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <span className="text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded">
-                  {workspace.members?.length || 0} miembros
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded">
+                    {workspace.members?.length || 0} miembros
+                  </span>
+                  <button
+                    onClick={() => handleDeleteWorkspace(workspace.id)}
+                    disabled={deletingId === workspace.id}
+                    className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Eliminar workspace"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <h3 className="text-xl font-semibold text-white mb-2">{workspace.name}</h3>

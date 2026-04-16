@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workspace } from './entities/workspace.entity';
+import { Project } from '../projects/entities/project.entity';
+import { Task } from '../tasks/entities/task.entity';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 
@@ -10,6 +12,10 @@ export class WorkspacesService {
   constructor(
     @InjectRepository(Workspace)
     private readonly workspaceRepository: Repository<Workspace>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
   ) {}
 
   async findAll(): Promise<Workspace[]> {
@@ -78,11 +84,27 @@ export class WorkspacesService {
   }
 
   async remove(id: string): Promise<void> {
-    const workspace = await this.workspaceRepository.findOne({ where: { id } });
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id },
+      relations: ['projects'],
+    });
+
     if (!workspace) {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
     }
 
+    // Delete all tasks for each project
+    for (const project of workspace.projects) {
+      const tasks = await this.taskRepository.find({
+        where: { project: { id: project.id } },
+      });
+      await this.taskRepository.remove(tasks);
+    }
+
+    // Delete all projects
+    await this.projectRepository.remove(workspace.projects);
+
+    // Delete the workspace
     await this.workspaceRepository.remove(workspace);
   }
 
